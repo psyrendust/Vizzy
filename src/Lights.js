@@ -5,23 +5,14 @@ import Mesh from 'famous/webgl-renderables/Mesh';
 import Node from 'famous/core/Node';
 import PointLight from 'famous/webgl-renderables/lights/PointLight';
 
+import {SpinnerZ} from './components/Spinner';
+
 const DEBUG = true;
 const GEOMETRY = new GeodesicSphere({detail: 1});
 const LENGTH = 2 * Math.PI;
-const RADIUS = 200;
-const TOTAL = 4;
-
-class LightSpinner {
-  constructor(node) {
-    this.node = node;
-    this.id = this.node.addComponent(this);
-    this.node.requestUpdate(this.id);
-  }
-  onUpdate(time) {
-    this.node.setRotation(0, 0, time / 2000);
-    this.node.requestUpdateOnNextTick(this.id);
-  }
-}
+const POSITION_Z = 200;
+const RADIUS = 300;
+const TOTAL = 1;
 
 export default class Lights extends Node {
   constructor() {
@@ -31,7 +22,7 @@ export default class Lights extends Node {
       .setOrigin(0.5, 0.5, 0.5)
       .setMountPoint(0.5, 0.5, 0.5);
     let angle = LENGTH / TOTAL;
-    let pos = [0, 0, RADIUS];
+    let pos = [0, 0, POSITION_Z];
     let color;
     this.lights = [];
     for (var i = 0, counter = 0; i < LENGTH; i += angle, counter++) {
@@ -40,7 +31,7 @@ export default class Lights extends Node {
       this.lights[counter] = this.addChild(new Light())
         .setPosition(...pos);
     }
-    this.spinner = new LightSpinner(this);
+    this.spinner = new SpinnerZ(this, { speed: 2000 });
   }
 }
 
@@ -51,7 +42,7 @@ class Light extends Node {
       .setAlign(0.5, 0.5, 0.5)
       .setMountPoint(0.5, 0.5, 0.5)
       .setOrigin(0.5, 0.5, 0.5);
-    this.color = new Color(ColorRange.getRandomHex('pastel'));
+    this.color = new Color(ColorRange.getRandomHex('dark'));
     this.light = new PointLight(this);
     this.light.setColor(this.color);
     if (DEBUG) {
