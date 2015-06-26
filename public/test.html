@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title></title>
+</head>
+<body>
+  <audio id="minipops" src="media/minipops.mp3" style="display: none;"></audio>
+  <script>
+  var element = document.getElementsByTagName('audio')[0];
+  var context = new (window.AudioContext || window.webkitAudioContext)();
+  var source = context.createMediaElementSource(element);
+  var filter = context.createBiquadFilter();
+  source.connect(filter);
+  filter.connect(context.destination);
+  console.log(filter.type);
+  filter.type = 'lowpass';
+  filter.frequency.value = 500;
+  filter.Q.value = 0.8
+  filter.gain.value = 30;
+  element.play();
+  </script>
+</body>
+</html>

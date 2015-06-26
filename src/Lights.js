@@ -5,14 +5,15 @@ import Mesh from 'famous/webgl-renderables/Mesh';
 import Node from 'famous/core/Node';
 import PointLight from 'famous/webgl-renderables/lights/PointLight';
 
-import {SpinnerZ} from './components/Spinner';
+import {SpinnerY, SpinnerZ} from './components/Spinner';
 
 const DEBUG = true;
 const GEOMETRY = new GeodesicSphere({detail: 1});
 const LENGTH = 2 * Math.PI;
-const POSITION_Z = 200;
-const RADIUS = 300;
-const TOTAL = 1;
+const POSITION_Z = [-400, 0, 400];
+const RADIUS = 500;
+const TOTAL = 3;
+const COLOR_TYPES = ['', 'pastel', 'medium', 'dark'];
 
 export default class Lights extends Node {
   constructor() {
@@ -28,10 +29,12 @@ export default class Lights extends Node {
     for (var i = 0, counter = 0; i < LENGTH; i += angle, counter++) {
       pos[0] = RADIUS * Math.cos(i);
       pos[1] = RADIUS * Math.sin(i);
+      pos[2] = POSITION_Z[i];
       this.lights[counter] = this.addChild(new Light())
         .setPosition(...pos);
     }
-    this.spinner = new SpinnerZ(this, { speed: 2000 });
+    this.spinnerZ = new SpinnerZ(this, { speed: 6000 });
+    this.spinnerY = new SpinnerY(this, { speed: 6000 });
   }
 }
 
@@ -53,5 +56,22 @@ class Light extends Node {
       this.mesh.setGeometry(GEOMETRY);
       this.mesh.setBaseColor(this.color);
     }
+    // this.id = this.addComponent(this);
+    this.changeColor();
+    // setTimeout(() => {
+    //   this.requestUpdate(this.id);
+    // }, (Math.random() * 1000) + 250);
+  }
+  // onUpdate(time) {
+    // this.delta = Date.now() * 0.0009;
+    // this.setPosition(null, null, Math.sin(this.delta) * 450);
+    // this.requestUpdateOnNextTick(this.id);
+  // }
+  changeColor() {
+    this.color.set(ColorRange.getRandomHex(COLOR_TYPES[Math.floor(Math.random() * 4)]), { duration: 100 }, ()=> {
+      setTimeout(() => {
+        this.changeColor();
+      }, (Math.random() * 8000) + 2000);
+    });
   }
 }

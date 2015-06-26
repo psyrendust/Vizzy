@@ -14,9 +14,9 @@ const PRIMITIVE_TYPES = [
   'TRIANGLE_FAN'
 ];
 const SPHERE = new Sphere({
-  detail: 4
+  detail: 20
 });
-SPHERE.spec.type = PRIMITIVE_TYPES[0];
+SPHERE.spec.type = PRIMITIVE_TYPES[6];
 
 export default class CenterPiece extends Node {
   constructor() {
@@ -27,7 +27,7 @@ export default class CenterPiece extends Node {
       .setAlign(0.5, 0.5, 0.5)
       .setMountPoint(0.5, 0.5, 0.5)
       .setOrigin(0.5, 0.5, 0.5)
-      .setPosition(0, 0, 250);
+      .setPosition(0, 0, 0);
 
     this.color = new Color('#ffffff');
     this.mesh = new Mesh(this);

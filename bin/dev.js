@@ -10,6 +10,7 @@ var fs = require('fs');
 var finalhandler = require('finalhandler');
 var serveStatic = require('serve-static');
 var chalk = require('chalk');
+var bs = require('browser-sync').create();
 
 var b = browserify(path.resolve('./src/index.js'), watchify.args);
 var w = watchify(b);
@@ -49,10 +50,16 @@ w.on('update', function (ids) {
     update(w.bundle());
 });
 
-var serve = serveStatic(path.normalize('./public/'));
+// var serve = serveStatic(path.normalize('./public/'));
 
-var server = http.createServer(function(req, res){
-  serve(req, res, finalhandler(req, res))
+// var server = http.createServer(function(req, res){
+//   serve(req, res, finalhandler(req, res))
+// });
+
+// server.listen(1618, function() {console.log(chalk.grey('serving ') + chalk.blue(path.resolve('./public/')) + chalk.grey(' on port ') + chalk.blue('1618'));});
+
+bs.init({
+  port: 1618,
+  server: path.resolve('./public'),
+  files: ['./public/**/*.{js,html,obj,png}']
 });
-
-server.listen(1618, function() {console.log(chalk.grey('serving ') + chalk.blue(path.resolve('./public/')) + chalk.grey(' on port ') + chalk.blue('1618'));});

@@ -19,12 +19,17 @@
   },
   "browserify": {
     "transform": [
-      "babelify"
+      "babelify",
+      "cssify",
+      "brfs"
     ]
   },
   "devDependencies": {
+    "brfs": "^1.4.0",
+    "browser-sync": "^2.7.12",
     "browserify": "^10.1.3",
     "chalk": "^1.0.0",
+    "cssify": "^0.7.0",
     "eslint": "^0.23.0",
     "finalhandler": "^0.4.0",
     "jscs": "^1.7.3",
