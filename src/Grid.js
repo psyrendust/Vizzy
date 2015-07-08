@@ -49,6 +49,9 @@ let vertexShader = Material.vizzyVS(null, {
   }
 });
 
+const MathMax = Math.max;
+const MathMin = Math.min;
+
 export default class Grid extends Node {
   constructor(audio, lights) {
     super();
@@ -78,8 +81,9 @@ export default class Grid extends Node {
     this.geometry.setDrawType(PRIMITIVE_TYPES[1]);
     // this.mesh.setFlatShading(true);
 
-    this.mesh.setNormals(vertexShader);
-    this.mesh.setBaseColor(Material.vizzyFS());
+    // this.mesh.setNormals(vertexShader);
+    // this.mesh.setBaseColor(Material.vizzyFS());
+    this.mesh.setBaseColor(this.color);
 
     this.mesh.setGeometry(this.geometry);
     this.mesh.setDrawOptions({
@@ -102,27 +106,36 @@ export default class Grid extends Node {
 
   updateItems(data) {
     if (this.geometry) {
-      var row = 0;
-      var col = 0;
+      let row = 0;
+      let col = 0;
+      let maxVal = 0;
+      let offset;
       for (let i = 0; i < this.vtxPositions.length; i += 3) {
         if (data.fftBufferFloat[row]) {
-          let offset = ((data.fftBufferFloat[row][col++] + 90) * -0.025) - 0.5;
+          offset = ((data.fftBufferFloat[row][col++] + 90) * -0.025) - 0.5;
           if (offset > 0.5) offset = 0.5;
-          if (row === 30 && col === 5) {
-            let lightOffset = (offset * -2) + 0.40;
-            this.lights.color.setColor([lightOffset, lightOffset, lightOffset]);
-          }
-          this.vtxPositions[i + 0] = this.vtxPositionsStatic[i + 0];
-          this.vtxPositions[i + 1] = this.vtxPositionsStatic[i + 1];
-          this.vtxPositions[i + 2] = this.vtxPositionsStatic[i + 2] + (offset * -1 * this.amplitude);
-          if (col >= data.bufferLength) {
-            row++;
-            col = 0;
-          }
+          // if (row === 30 && col === 5) {
+          //   let lightOffset = (offset * -2) + 0.40;
+          //   this.lights.color.setColor([lightOffset, lightOffset, lightOffset]);
+          // }
+          // this.vtxPositions[i + 0] = this.vtxPositionsStatic[i + 0];
+          // this.vtxPositions[i + 1] = this.vtxPositionsStatic[i + 1];
+          let val = MathMin(this.vtxPositionsStatic[i + 2] + (offset * -1 * this.amplitude), 2.5);
+          if (val <= -0.5) val = -0.5;
+          this.vtxPositions[i + 2] = val;
+        } else {
+          col++;
+          this.vtxPositions[i + 0] = 0;
+          this.vtxPositions[i + 1] = 0;
+          this.vtxPositions[i + 2] = 0;
+        }
+        if (col >= data.bufferLength) {
+          row++;
+          col = 0;
         }
       }
       this.geometry.setVertexPositions(this.vtxPositions);
-      this.geometry.setNormals(GeometryHelper.computeNormals(this.indices, this.vtxPositions, this.normals));
+      // this.geometry.setNormals(GeometryHelper.computeNormals(this.indices, this.vtxPositions, this.normals));
       this.mesh.setGeometry(this.geometry);
     }
   }

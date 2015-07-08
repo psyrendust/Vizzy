@@ -1,5 +1,5 @@
 // const FFTSIZE = 128;
-const FFTSIZE = 32;
+const FFTSIZE = 128;
 const TIMEBUFFER = 128;
 const REFRESH_RATE = 50;
 
