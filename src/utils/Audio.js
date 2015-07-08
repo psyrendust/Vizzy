@@ -1,82 +1,198 @@
-const FFTSIZE = 128;
-const FILTERS = {
-  LOWPASS: ['lowpass', 0],
-  HIGHPASS: ['highpass', 1],
-  BANDPASS: ['bandpass', 2],
-  LOWSHELF: ['lowshelf', 3],
-  HIGHSHELF: ['highshelf', 4],
-  PEAKING: ['peaking', 5],
-  NOTCH: ['notch', 6],
-  ALLPASS: ['allpass', 7],
-};
-const FREQ_BOTTOM = 700;
-const FREQ_CENTER = 3000;
-const FREQ_TOP = 4200;
+// const FFTSIZE = 128;
+const FFTSIZE = 32;
+const TIMEBUFFER = 128;
+const REFRESH_RATE = 50;
 
 export default class Audio {
-  constructor() {
-    this.element = document.getElementById('minipops');
+  constructor(node, params = {}) {
+    this.node = node;
+    this.audioElements = document.querySelectorAll('.vizzyMedia');
+    this.totalTracks = this.audioElements.length;
     this.isPlaying = false;
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    this.gainNode = this.audioCtx.createGain();
     this.analyser = this.audioCtx.createAnalyser();
-    this.filterLowpass = this.audioCtx.createBiquadFilter();
-    this.filterBandpass = this.audioCtx.createBiquadFilter();
-    this.filterHighpass = this.audioCtx.createBiquadFilter();
-    this.filterTypeIsString = (typeof this.filterLowpass.type === 'string') ? 0 : 1;
     this.analyser.minDecibels = -90;
     this.analyser.maxDecibels = 0;
-    this.analyser.smoothingTimeConstant = 0.99;
+    this.analyser.smoothingTimeConstant = 0.5;
     this.analyser.fftSize = FFTSIZE;
-    this.configureLowpass();
-    this.configureBandpass();
-    this.configureHighpass();
-    this.source = this.audioCtx.createMediaElementSource(this.element);
-    this.source.connect(this.filterLowpass);
-    this.source.connect(this.filterHighpass);
-    // this.source.connect(this.audioCtx.destination);
-    this.filterLowpass.connect(this.audioCtx.destination);
-    this.filterLowpass.connect(this.analyser);
-    // this.filterHighpass.connect(this.audioCtx.destination);
-    // this.filterHighpass.connect(this.analyser);
-    // this.filterBandpass.connect(this.audioCtx.destination);
-    // this.filterBandpass.connect(this.analyser);
-    this.start();
+    this.refreshRate = REFRESH_RATE;
+    this.data = {
+      bufferLength: this.analyser.frequencyBinCount,
+      fftBufferFloat: [],
+      fftBufferByte: [],
+      TIMEBUFFER: TIMEBUFFER
+    };
+    this.dataArrayFloat = new Float32Array(this.data.bufferLength);
+    this.dataArrayByte = new Uint8Array(this.data.bufferLength);
+    this.id = this.node.addComponent(this);
+    this.buffers = [];
+    this.elements = [];
+    this.index = 1;
+    this.loaded = 0;
+
+    this.config = {
+      autoPlay: params.autoPlay || false,
+      loop: params.loop || false,
+      volume: params.volume || 1
+    };
+
+    this.gainNode.gain.value = this.config.volume;
+
+    for (let i = 0; i < TIMEBUFFER; i++) {
+      let bufferFloat = new Float32Array(this.data.bufferLength);
+      let bufferByte = new Uint8Array(this.data.bufferLength);
+      for (let j = 0; j < bufferFloat.length; j++) {
+        bufferFloat[j] = -110.0;
+        bufferByte[j] = 0;
+      }
+      this.data.fftBufferFloat.push(bufferFloat);
+      this.data.fftBufferByte.push(bufferByte);
+    }
+
+    console.log('-- start preload');
+    for (let i = 0; i < this.totalTracks; i++) {
+      this.ajax({
+        file: this.audioElements[i].src,
+        id: i
+      });
+    }
+    console.log('-- cleanup audio tags');
+    for (let i = 0; i < this.totalTracks; i++) {
+      this.audioElements[i].parentNode.removeChild(this.audioElements[i]);
+    }
   }
-  configureLowpass() {
-    this.filterLowpass.type = FILTERS.LOWPASS[this.filterTypeIsString];
-    this.filterLowpass.frequency.value = 120;
-    // this.filterLowpass.Q.value = 0.9;
-    this.filterLowpass.gain.value = 0;
+
+  ajax(params) {
+    let httpRequest = new XMLHttpRequest();
+    httpRequest.config = {
+      id: params.id,
+      url: params.file
+    };
+    httpRequest.addEventListener('load', () => {
+      console.log('---- loaded: ' + httpRequest.config.url);
+      this.decodeAudioData(httpRequest);
+    }, false);
+
+    try {
+      console.log('-- ajax: ' + params.file);
+      httpRequest.open('GET', params.file, true);
+      httpRequest.responseType = 'arraybuffer';
+      httpRequest.send();
+    } catch (e) {
+      window.console.log(e);
+    }
   }
-  configureBandpass() {
-    this.filterBandpass.type = FILTERS.BANDPASS[this.filterTypeIsString];
-    this.filterBandpass.frequency.value = FREQ_CENTER;
-    this.filterBandpass.Q.value = FREQ_CENTER / (FREQ_TOP - FREQ_BOTTOM);
-    this.filterBandpass.gain.value = 0;
-  }
-  configureHighpass() {
-    this.filterHighpass.type = FILTERS.HIGHPASS[this.filterTypeIsString];
-    this.filterHighpass.frequency.value = 7000;
-    this.filterHighpass.gain.value = 0;
-  }
-  start() {
-    this.element.addEventListener('loadeddata', () => {
-      this.duration = this.element.duration;
-      this.bufferLength = this.analyser.frequencyBinCount;
-      // this.dataArray = new Float32Array(this.bufferLength);
-      this.dataArray = new Uint8Array(this.bufferLength);
-      this.element.play();
-      this.isPlaying = true;
+
+  decodeAudioData(httpRequest) {
+    console.log('-- decodingAudioData: ' + httpRequest.config.url);
+    this.audioCtx.decodeAudioData(httpRequest.response, (buffer) => {
+      let source = this.audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.audioCtx.destination);
+      source.connect(this.analyser);
+      source.onended = (e) => {
+        console.log('onended');
+        this.nextSong();
+      };
+      source.loop = this.config.loop;
+      this.buffers[httpRequest.config.id] = {
+        id: httpRequest.config.id,
+        source: source,
+        buffer: buffer
+      };
+      this.decodeAudioDataComplete(httpRequest.config.url);
     });
-    this.element.addEventListener('ended', () => {
-      this.element.currentTime = 0;
-      this.element.play();
-    });
   }
+
+  decodeAudioDataComplete(id) {
+    console.log('---- decodeAudioDataComplete: ' + id);
+    this.loaded += 1;
+    if (this.loaded >= this.totalTracks) {
+      this.currentTime = Date.now();
+      this.onUpdate();
+      this.nextSong();
+    }
+  }
+
+  onUpdate() {
+    if (Date.now() - this.currentTime > this.refreshRate) {
+      this.analyser.getFloatFrequencyData(this.dataArrayFloat);
+      this.analyser.getByteFrequencyData(this.dataArrayByte);
+      for (let i = this.data.TIMEBUFFER - 1; i > 0; i--) {
+        for (let j = 0; j < this.data.bufferLength; j++) {
+          this.data.fftBufferFloat[i][j] = this.data.fftBufferFloat[i - 1][j];
+          this.data.fftBufferByte[i][j] = this.data.fftBufferByte[i - 1][j];
+        }
+      }
+      for (let i = 0; i < this.data.bufferLength; i++) {
+        this.data.fftBufferFloat[0][i] = this.dataArrayFloat[i];
+        this.data.fftBufferByte[0][i] = this.dataArrayByte[i];
+      }
+      this.currentTime = Date.now();
+    }
+    this.node.requestUpdateOnNextTick(this.id);
+  }
+
+  getSource() {
+    return this.buffers[this.index].source;
+  }
+
+  // Get the current byte frequency data
   getData() {
-    if (!this.isPlaying) return [];
-    // this.analyser.getFloatFrequencyData(this.dataArray);
-    this.analyser.getByteFrequencyData(this.dataArray);
-    return this.dataArray;
+    return this.data;
+  }
+
+  prevSong() {
+    this.pause();
+    this.index--;
+    if (this.index < 0) {
+      this.index = this.totalTracks - 1;
+    }
+    this.rewind();
+    this.play();
+  }
+
+  nextSong() {
+    this.pause();
+    this.index++;
+    if (this.index >= this.totalTracks) {
+      this.index = 0;
+    }
+    this.rewind();
+    this.play();
+  }
+
+  pause() {
+    if (this.isPlaying) {
+      this.isPlaying = false;
+      let source = this.getSource();
+      if (source.noteOff) source.noteOff(0);
+      else if (source.stop) source.stop(0);
+      else if (source.pause) source.pause();
+    }
+
+  }
+
+  play() {
+    let source = this.getSource();
+    this.duration = source.buffer.duration;
+    if (source.noteOn) {
+      console.log('-- play: noteOn');
+      source.noteOn(this.getSource().currentTime);
+      // source.noteGrainOn(this.getSource().currentTime, this.duration - 15, null);
+    } else if (source.start) {
+      console.log('-- play: start');
+      source.start(this.getSource().currentTime);
+    } else if (source.play) {
+      console.log('-- play: play');
+      source.play();
+    }
+    this.isPlaying = true;
+  }
+
+  rewind() {
+    this.pause();
+    this.getSource().currentTime = 0;
   }
 }
