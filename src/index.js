@@ -33,9 +33,9 @@ class Vizzy {
       .setOrigin(0.5, 0.5, 0.5)
       .setMountPoint(0.5, 0.5, 0.5)
       .setPosition(0, 0, 0);
-    // this.lights = this.root.addChild(new Lights());
+    this.lights = this.root.addChild(new Lights());
     this.audio = new Audio(this.root);
-    this.grid = this.root.addChild(new Grid(this.audio, this.lights));
+    this.grid = this.root.addChild(new Grid(this.audio));
     this.id = this.root.addComponent(this);
     this.root.requestUpdate(this.id);
   }

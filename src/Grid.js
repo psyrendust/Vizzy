@@ -4,7 +4,7 @@ import GeometryHelper from 'famous/webgl-geometries/GeometryHelper';
 import Material from 'famous/webgl-materials/Material';
 import Mesh from 'famous/webgl-renderables/Mesh';
 import Node from 'famous/core/Node';
-import Plane from 'famous/webgl-geometries/primitives/Plane';
+import Box from 'famous/webgl-geometries/primitives/Box';
 import Vec3 from 'famous/math/Vec3';
 
 import ColorRange from './utils/ColorRange';
@@ -51,53 +51,43 @@ let vertexShader = Material.vizzyVS(null, {
 
 const MathMax = Math.max;
 const MathMin = Math.min;
+const geometry = new Box();
+const SIZE = [20, 10, 10];
+const COLORS = ColorRange.RAINBOW_HEX;
 
 export default class Grid extends Node {
-  constructor(audio, lights) {
+  constructor(audio) {
     super();
+    this.audio = audio;
+
+    let sx = SIZE[0] * this.audio.fftsize;
+    let sy = SIZE[1] * this.audio.getData().TIMEBUFFER;
+    console.log(sx, sy);
+
     this
       .setAlign(0.5, 0.5, 0.5)
       .setOrigin(0.5, 0.5, 0.5)
       .setMountPoint(0.5, 0.5, 0.5)
       .setSizeMode('absolute', 'absolute', 'absolute')
-      .setAbsoluteSize(400, 1000, 400)
+      .setAbsoluteSize(sx, sy, 200)
       .setRotation(1.431170069931799, 1.564139751053517e-8, 0.6457718812057764)
       .setPosition(0, 100, -300);
 
-    this.audio = audio;
-    this.lights = lights;
-
     this.dragRotation = new DragRotation(this);
-    this.color = new Color(ColorRange.getRandomHex('dark'));
-    this.mesh = new Mesh(this);
-    this.geometry = new DynamicGeometry();
+    // this.color = new Color(ColorRange.getRandomHex('dark'));
+    this.cubes = [];
+    let color = new Color(ColorRange.getRandomHex('dark'));
+    let data = this.audio.getData();
 
-    this.plane = new Plane({
-      detailY: this.audio.getData().TIMEBUFFER - 1,
-      detailX: this.audio.getData().bufferLength - 1
-    });
-
-    this.geometry.fromGeometry(this.plane);
-    this.geometry.setDrawType(PRIMITIVE_TYPES[1]);
-    // this.mesh.setFlatShading(true);
-
-    // this.mesh.setNormals(vertexShader);
-    // this.mesh.setBaseColor(Material.vizzyFS());
-    this.mesh.setBaseColor(this.color);
-
-    this.mesh.setGeometry(this.geometry);
-    this.mesh.setDrawOptions({
-      side: 'double'
-    });
-
-    this.indices = this.geometry.getVertexBuffer('indices');
-
-    this.vtxPositions = this.geometry.getVertexPositions();
-    this.vtxPositionsStatic = JSON.parse(JSON.stringify(this.vtxPositions));
-    this.cachedNormals = this.geometry.getNormals();
-    this.normals = [];
-    for (let i = 0; i < this.vtxPositions.length; i++) {
-      this.normals[i] = new Vec3();
+    for (let row = 0, depth = data.fftBufferFloat.length; row < depth; row++) {
+      let y = row / depth;
+      this.cubes[row] = [];
+      for (let col = 0, width = data.fftBufferFloat[row].length; col < width; col++) {
+        let x = col / width;
+        let cube = this.addChild(new Cube());
+        cube.setAlign(x, y, 0);
+        this.cubes[row][col] = cube;
+      }
     }
     this.setRefreshRate(0.5);
     this.setSmoothing(0.5);
@@ -105,39 +95,48 @@ export default class Grid extends Node {
   }
 
   updateItems(data) {
-    if (this.geometry) {
-      let row = 0;
-      let col = 0;
-      let maxVal = 0;
+    // if (this.geometry) {
       let offset;
-      for (let i = 0; i < this.vtxPositions.length; i += 3) {
-        if (data.fftBufferFloat[row]) {
-          offset = ((data.fftBufferFloat[row][col++] + 90) * -0.025) - 0.5;
-          if (offset > 0.5) offset = 0.5;
-          // if (row === 30 && col === 5) {
-          //   let lightOffset = (offset * -2) + 0.40;
-          //   this.lights.color.setColor([lightOffset, lightOffset, lightOffset]);
-          // }
-          // this.vtxPositions[i + 0] = this.vtxPositionsStatic[i + 0];
-          // this.vtxPositions[i + 1] = this.vtxPositionsStatic[i + 1];
-          let val = MathMin(this.vtxPositionsStatic[i + 2] + (offset * -1 * this.amplitude), 2.5);
-          if (val <= -0.5) val = -0.5;
-          this.vtxPositions[i + 2] = val;
-        } else {
-          col++;
-          this.vtxPositions[i + 0] = 0;
-          this.vtxPositions[i + 1] = 0;
-          this.vtxPositions[i + 2] = 0;
-        }
-        if (col >= data.bufferLength) {
-          row++;
-          col = 0;
+      for (let row = 0, depth = data.fftBufferFloat.length; row < depth; row++) {
+        for (let col = 0, width = data.fftBufferFloat[row].length; col < width; col++) {
+          offset = ((data.fftBufferFloat[row][col] + 90) * -0.025) - 0.5;
+          offset *= 20;
+          // if (offset > 0.5) offset = 0.5;
+          // let val = MathMin((offset * -1 * this.amplitude), 2.5);
+          let val = offset * -1 * this.amplitude;
+          if (val < 1) val = 1;
+          this.cubes[row][col].setScale(null, null, val);
+          let color = COLORS[Math.floor(val / COLORS.length)];
+          // this.cubes[row][col].updateColor(color);
         }
       }
-      this.geometry.setVertexPositions(this.vtxPositions);
-      // this.geometry.setNormals(GeometryHelper.computeNormals(this.indices, this.vtxPositions, this.normals));
-      this.mesh.setGeometry(this.geometry);
-    }
+    //   for (let i = 0; i < this.vtxPositions.length; i += 3) {
+    //     if (data.fftBufferFloat[row]) {
+    //       offset = ((data.fftBufferFloat[row][col++] + 90) * -0.025) - 0.5;
+    //       if (offset > 0.5) offset = 0.5;
+    //       // if (row === 30 && col === 5) {
+    //       //   let lightOffset = (offset * -2) + 0.40;
+    //       //   this.lights.color.setColor([lightOffset, lightOffset, lightOffset]);
+    //       // }
+    //       // this.vtxPositions[i + 0] = this.vtxPositionsStatic[i + 0];
+    //       // this.vtxPositions[i + 1] = this.vtxPositionsStatic[i + 1];
+    //       let val = MathMin(this.vtxPositionsStatic[i + 2] + (offset * -1 * this.amplitude), 2.5);
+    //       if (val <= -0.5) val = -0.5;
+    //       this.vtxPositions[i + 2] = val;
+    //     } else {
+    //       col++;
+    //       this.vtxPositions[i + 0] = 0;
+    //       this.vtxPositions[i + 1] = 0;
+    //       this.vtxPositions[i + 2] = 0;
+    //     }
+    //     if (col >= data.bufferLength) {
+    //       row++;
+    //       col = 0;
+    //     }
+    //   }
+    //   this.geometry.setVertexPositions(this.vtxPositions);
+    //   this.mesh.setGeometry(this.geometry);
+    // }
   }
 
   setSmoothing(v) {
@@ -150,5 +149,24 @@ export default class Grid extends Node {
 
   setAmplitude(v) {
     this.amplitude = v * 2;
+  }
+}
+
+class Cube extends Node {
+  constructor() {
+    super();
+    this
+      .setOrigin(0.5, 0.5, 0)
+      .setMountPoint(0.5, 0.5, 0.5)
+      .setSizeMode('absolute', 'absolute', 'absolute')
+      .setAbsoluteSize(SIZE[0], SIZE[1], SIZE[2]);
+    this.color = new Color('#ffffff');
+    this.mesh = new Mesh(this);
+    this.mesh.setGeometry(geometry);
+    this.mesh.setBaseColor(this.color);
+  }
+  updateColor(newColor) {
+    this.color.set(newColor);
+    this.mesh.setBaseColor(this.color);
   }
 }

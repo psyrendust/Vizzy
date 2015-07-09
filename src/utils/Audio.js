@@ -1,6 +1,6 @@
 // const FFTSIZE = 128;
-const FFTSIZE = 128;
-const TIMEBUFFER = 128;
+const FFTSIZE = 32;
+const TIMEBUFFER = 32;
 const REFRESH_RATE = 50;
 
 export default class Audio {
@@ -16,6 +16,7 @@ export default class Audio {
     this.analyser.maxDecibels = 0;
     this.analyser.smoothingTimeConstant = 0.5;
     this.analyser.fftSize = FFTSIZE;
+    this.fftsize = FFTSIZE / 2;
     this.refreshRate = REFRESH_RATE;
     this.data = {
       bufferLength: this.analyser.frequencyBinCount,
