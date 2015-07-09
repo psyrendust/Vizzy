@@ -1,6 +1,6 @@
 // const FFTSIZE = 128;
 const FFTSIZE = 32;
-const TIMEBUFFER = 32;
+const TIMEBUFFER = 2;
 const REFRESH_RATE = 50;
 
 export default class Audio {

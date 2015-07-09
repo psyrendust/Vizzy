@@ -30,14 +30,14 @@ export default class Lights extends Node {
     this.color = new Color('#ffffff');
     this.light = new PointLight(this);
     this.light.setColor(this.color);
-    if (DEBUG) {
-      this
-        .setSizeMode('absolute', 'absolute', 'absolute')
-        .setAbsoluteSize(50, 50, 50);
-      this.mesh = new Mesh(this);
-      this.mesh.setGeometry(GEOMETRY);
-      this.mesh.setBaseColor(this.color);
-    }
+    // if (DEBUG) {
+    //   this
+    //     .setSizeMode('absolute', 'absolute', 'absolute')
+    //     .setAbsoluteSize(50, 50, 50);
+    //   this.mesh = new Mesh(this);
+    //   this.mesh.setGeometry(GEOMETRY);
+    //   this.mesh.setBaseColor(this.color);
+    // }
   }
 }
 
