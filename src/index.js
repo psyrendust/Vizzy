@@ -29,12 +29,13 @@ class Background extends Node {
       .setAlign(0.5, 0.5, 0.5)
       .setOrigin(0.5, 0.5, 0.5)
       .setMountPoint(0.5, 0.5, 0.5)
-      .setProportionalSize(1, 1)
+      .setProportionalSize(1, 1, 1)
       .setPosition(0, 0, 0);
     this.opacity = new Opacity(this);
     this.opacity.set(0);
     this.el = new DOMElement(this, {
       properties: {
+        'z-index': '0',
         width: '100%',
         height: '100%',
         background: "#00b9d7",
@@ -69,10 +70,10 @@ class Vizzy {
     this.camera = new Camera(this.scene);
     this.camera.setDepth(120);
     this.root = this.scene.addChild()
-    this.background = this.root.addChild(new Background());
+    // this.background = this.root.addChild(new Background());
     this.lights = this.root.addChild(new Lights());
     this.audio = new Audio(this.root);
-    this.grid = this.root.addChild(new Grid(this.audio));
+    this.grid = new Grid(this.root.addChild(), this.audio);
     this.data = {};
     this.refreshRate = new RefreshRate(100);
     this.id = this.root.addComponent(this);
@@ -80,17 +81,17 @@ class Vizzy {
   }
   onUpdate() {
     this.data = this.audio.getData();
-    this.refreshRate.throttle(() => {
-      if (this.data.fftBufferFloat[0]) {
-        if (this.data.fftBufferFloat[0][this.data.fftSize - 8] > -90) {
-          this.background.show();
-        } else {
-          this.background.hide();
-        }
-      } else {
-        this.background.hide();
-      }
-    });
+    // this.refreshRate.throttle(() => {
+    //   if (this.data.fftBufferFloat[0]) {
+    //     if (this.data.fftBufferFloat[0][this.data.fftSize - 8] > -90) {
+    //       this.background.show();
+    //     } else {
+    //       this.background.hide();
+    //     }
+    //   } else {
+    //     this.background.hide();
+    //   }
+    // });
     this.grid.updateItems(this.data);
     this.root.requestUpdateOnNextTick(this.id);
   }

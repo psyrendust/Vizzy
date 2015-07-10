@@ -53,13 +53,12 @@ const vizzyVS = Material.vizzyVS(null, {
   }
 });
 
-export default class Grid extends Node {
-  constructor(audio) {
-    super();
+export default class Grid {
+  constructor(node, audio) {
     // gl_PointSize = 20.0;
 
-
-    this
+    this.node = node;
+    this.node
       .setAlign(0.5, 0.5, 0.5)
       .setOrigin(0.5, 0.5, 0.5)
       .setMountPoint(0.5, 0.5, 0.5)
@@ -71,9 +70,9 @@ export default class Grid extends Node {
     this.clock = FamousEngine.getClock();
     this.audio = audio;
 
-    this.mesh = new Mesh(this);
+    this.mesh = new Mesh(this.node);
     this.geometry = new DynamicGeometry();
-    this.dragRotation = new DragRotation(this);
+    this.dragRotation = new DragRotation(this.node);
 
     this.plane = new Plane({
       detailY: this.audio.getData().TIMEBUFFER - 1,
