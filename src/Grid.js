@@ -1,13 +1,11 @@
-import Color from 'famous/utilities/Color';
 import DynamicGeometry from 'famous/webgl-geometries/DynamicGeometry';
-import GeometryHelper from 'famous/webgl-geometries/GeometryHelper';
+import FamousEngine from 'famous/core/FamousEngine';
 import Material from 'famous/webgl-materials/Material';
 import Mesh from 'famous/webgl-renderables/Mesh';
 import Node from 'famous/core/Node';
 import Plane from 'famous/webgl-geometries/primitives/Plane';
 import Vec3 from 'famous/math/Vec3';
 
-import ColorRange from './utils/ColorRange';
 import DragRotation from './components/DragRotation';
 
 const PRIMITIVE_TYPES = [
@@ -22,64 +20,44 @@ const PRIMITIVE_TYPES = [
 const REFRESH_RATE = -2450;
 const PI = Math.PI;
 
-// const shader = `
-// vec3 vizzy() {
-//   v_normal[0] = (u_colorA[0] + (a_pos[2] * u_blend * -1.0) * (u_colorB[0] - u_colorA[0]));
-//   v_normal[1] = (u_colorA[1] + (a_pos[2] * u_blend * -1.0) * (u_colorB[1] - u_colorA[1]));
-//   v_normal[2] = (u_colorA[2] + (a_pos[2] * u_blend * -1.0) * (u_colorB[2] - u_colorA[2]));
-//   return v_normal - a_normals;
-// }`;
-
-// Material.registerExpression('vizzyVS', {
-//   output: 3,
-//   glsl: `vizzy();`,
-//   defines: shader
-// });
-
-// let vertexShader = Material.vizzyVS(null, {
-//   uniforms: {
-//     u_colorA: [0.0, 0.2, 0.8],
-//     u_colorB: [0.9, 0.1, 0.0],
-//     u_blend: 0.25
-//   }
-// });
-
 const MathMax = Math.max;
 const MathMin = Math.min;
+Material.registerExpression('vizzyVS', {
+  output: 3,
+  glsl: 'vizzyColor();',
+  defines: `
+    vec3 vizzyColor() {
+      v_amplitude = a_pos;
+      return vec3(0.0);
+    }`
+});
+
+Material.registerExpression('vizzyFS', {
+  output: 4,
+  glsl: `
+  vec4(
+    clamp((v_amplitude.z * u_blend * u_color[0]), 0.3, 1.0),
+    clamp((v_amplitude.z * u_blend * u_color[1]), 0.6, 1.0),
+    clamp((v_amplitude.z * u_blend * u_color[2]), 0.8, 1.0),
+    clamp(v_amplitude.z, 0.0, 0.9)
+  );`
+});
+
+const vizzyVS = Material.vizzyVS(null, {
+  uniforms: {
+    u_color: [1.0, 0.0, 0.9],
+    u_blend: 0.799
+  },
+  varyings: {
+    v_amplitude: [0.0, 0.0, 0.0]
+  }
+});
 
 export default class Grid extends Node {
-  constructor(audio, lights) {
+  constructor(audio) {
     super();
     // gl_PointSize = 20.0;
-    var shader =`
-      vec3 vizzyColor() {
-        v_amplitude = a_pos;
-        return vec3(0.0);
-      }`;
-    Material.registerExpression('vizzyVS', {
-      output: 3,
-      glsl: 'vizzyColor();',
-      defines: shader
-    });
-    var vizzyVS = Material.vizzyVS(null, {
-      uniforms: {
-        u_colorA: [1.0, 0.0, 0.9],
-        u_blend: 0.799
-      },
-      varyings: {
-        v_amplitude: [0.0, 0.0, 0.0]
-      }
-    });
-    Material.registerExpression('vizzyFS', {
-      output: 4,
-      glsl: `
-      vec4(
-        clamp((v_amplitude.z * u_blend * u_colorA[0]), 0.3, 1.0),
-        clamp((v_amplitude.z * u_blend * u_colorA[1]), 0.6, 1.0),
-        clamp((v_amplitude.z * u_blend * u_colorA[2]), 0.8, 1.0),
-        clamp(v_amplitude.z, 0.0, 0.9)
-      );`
-    });
+
 
     this
       .setAlign(0.5, 0.5, 0.5)
@@ -88,16 +66,14 @@ export default class Grid extends Node {
       .setSizeMode('absolute', 'absolute', 'absolute')
       .setAbsoluteSize(1100, 2800, 800)
       .setRotation(1.291543634104166, -2.696416956382564e-8, 1.9547687175892083)
-      // .setRotation(1.431170069931799, 1.564139751053517e-8, 0.6457718812057764)
       .setPosition(0, 200, -200);
 
+    this.clock = FamousEngine.getClock();
     this.audio = audio;
-    this.lights = lights;
 
-    this.dragRotation = new DragRotation(this);
-    this.color = new Color(ColorRange.getRandomHex('dark'));
     this.mesh = new Mesh(this);
     this.geometry = new DynamicGeometry();
+    this.dragRotation = new DragRotation(this);
 
     this.plane = new Plane({
       detailY: this.audio.getData().TIMEBUFFER - 1,
@@ -106,26 +82,27 @@ export default class Grid extends Node {
 
     this.geometry.fromGeometry(this.plane);
     this.geometry.setDrawType(PRIMITIVE_TYPES[1]);
+    this.mesh.setGeometry(this.geometry);
     this.mesh.setFlatShading(true);
     this.mesh.setPositionOffset(vizzyVS);
+    // TODO: (0.6.2) Have to setBaseColor in a setTimeout because of GL ERROR: "'v_amplitude' : undeclared identifier " in line 99
     setTimeout(() => {
       this.mesh.setBaseColor(Material.vizzyFS());
     }, 10);
 
-    this.mesh.setGeometry(this.geometry);
-
     this.indices = this.geometry.getVertexBuffer('indices');
-
     this.vtxPositions = this.geometry.getVertexPositions();
     this.vtxPositionsStatic = JSON.parse(JSON.stringify(this.vtxPositions));
-    this.cachedNormals = this.geometry.getNormals();
-    this.cachedNormals = new Float32Array(this.vtxPositions.length);
-    for (let i = 0; i < this.vtxPositions.length; i++) {
-      this.cachedNormals[i] = new Vec3();
-    }
     this.setRefreshRate(0.5);
     this.setSmoothing(0.5);
     this.setAmplitude(0.5);
+
+    // TODO: See TODO below in updateItems
+    // this.cachedNormals = this.geometry.getNormals();
+    // this.normals = new Float32Array(this.vtxPositions.length);
+    // for (let i = 0; i < this.vtxPositions.length; i++) {
+    //   this.normals[i] = new Vec3();
+    // }
   }
 
   updateItems(data) {
@@ -138,12 +115,6 @@ export default class Grid extends Node {
         if (data.fftBufferFloat[row]) {
           offset = ((data.fftBufferFloat[row][col++] + 90) * -0.025) - 0.5;
           if (offset > 0.5) offset = 0.5;
-          // if (row === 30 && col === 5) {
-          //   let lightOffset = (offset * -2) + 0.40;
-          //   this.lights.color.setColor([lightOffset, lightOffset, lightOffset]);
-          // }
-          // this.vtxPositions[i + 0] = this.vtxPositionsStatic[i + 0];
-          // this.vtxPositions[i + 1] = this.vtxPositionsStatic[i + 1];
           let val = MathMin(this.vtxPositionsStatic[i + 2] + (offset * -1 * this.amplitude), 2.5);
           if (val <= -0.5) val = -0.5;
           this.vtxPositions[i + 2] = val;
@@ -159,6 +130,7 @@ export default class Grid extends Node {
         }
       }
       this.geometry.setVertexPositions(this.vtxPositions);
+      // TODO: Not sure I need this, but it's ok since there is a performance hit when calling computeNormals as of 0.6.2
       // this.normals = GeometryHelper.computeNormals(this.indices, this.vtxPositions, this.cachedNormals);
       // this.geometry.setNormals(this.normals);
       this.mesh.setGeometry(this.geometry);

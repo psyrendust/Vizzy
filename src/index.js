@@ -4,11 +4,10 @@ import FamousEngine from 'famous/core/FamousEngine';
 import Node from 'famous/core/Node';
 import Opacity from 'famous/components/Opacity';
 
-import CenterPiece from './CenterPiece';
-import OuterPiece from './OuterPiece';
 import Lights from './Lights';
 import Grid from './Grid';
 import Audio from './utils/Audio';
+import RefreshRate from './utils/RefreshRate';
 
 require('./styles.css');
 FamousEngine.init();
@@ -70,26 +69,18 @@ class Vizzy {
     this.camera = new Camera(this.scene);
     this.camera.setDepth(120);
     this.root = this.scene.addChild()
-    this.lowpass = this.root.addChild()
-      .setSizeMode(1, 1, 1)
-      .setAbsoluteSize(20, 20, 20)
-      .setAlign(0.5, 0.5, 0.5)
-      .setOrigin(0.5, 0.5, 0.5)
-      .setMountPoint(0.5, 0.5, 0.5)
-      .setPosition(0, 0, 0);
     this.background = this.root.addChild(new Background());
     this.lights = this.root.addChild(new Lights());
     this.audio = new Audio(this.root);
-    this.grid = this.root.addChild(new Grid(this.audio, this.lights));
+    this.grid = this.root.addChild(new Grid(this.audio));
+    this.data = {};
+    this.refreshRate = new RefreshRate(100);
     this.id = this.root.addComponent(this);
     this.root.requestUpdate(this.id);
-    this.data = {};
-    this.currentTime = Date.now();
-    this.refreshRate = 100;
   }
   onUpdate() {
     this.data = this.audio.getData();
-    if (Date.now() - this.currentTime > this.refreshRate) {
+    this.refreshRate.throttle(() => {
       if (this.data.fftBufferFloat[0]) {
         if (this.data.fftBufferFloat[0][this.data.fftSize - 8] > -90) {
           this.background.show();
@@ -99,8 +90,7 @@ class Vizzy {
       } else {
         this.background.hide();
       }
-      this.currentTime = Date.now();
-    }
+    });
     this.grid.updateItems(this.data);
     this.root.requestUpdateOnNextTick(this.id);
   }

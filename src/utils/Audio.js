@@ -1,4 +1,5 @@
-// const FFTSIZE = 128;
+import RefreshRate from './RefreshRate';
+
 const FFTSIZE = 128;
 const TIMEBUFFER = 256;
 const REFRESH_RATE = 50;
@@ -16,7 +17,6 @@ export default class Audio {
     this.analyser.maxDecibels = 0;
     this.analyser.smoothingTimeConstant = 0.5;
     this.analyser.fftSize = FFTSIZE;
-    this.refreshRate = REFRESH_RATE;
     this.data = {
       fftSize: FFTSIZE / 2,
       bufferLength: this.analyser.frequencyBinCount,
@@ -111,14 +111,14 @@ export default class Audio {
     console.log('---- decodeAudioDataComplete: ' + id);
     this.loaded += 1;
     if (this.loaded >= this.totalTracks) {
-      this.currentTime = Date.now();
+      this.refreshRate = new RefreshRate(200);
       this.onUpdate();
       this.nextSong();
     }
   }
 
   onUpdate() {
-    if (Date.now() - this.currentTime > this.refreshRate) {
+    this.refreshRate.throttle(() => {
       this.analyser.getFloatFrequencyData(this.dataArrayFloat);
       this.analyser.getByteFrequencyData(this.dataArrayByte);
       for (let i = this.data.TIMEBUFFER - 1; i > 0; i--) {
@@ -131,9 +131,12 @@ export default class Audio {
         this.data.fftBufferFloat[0][i] = this.dataArrayFloat[i];
         this.data.fftBufferByte[0][i] = this.dataArrayByte[i];
       }
-      this.currentTime = Date.now();
-    }
+    });
     this.node.requestUpdateOnNextTick(this.id);
+  }
+
+  setRefreshRate(rate) {
+    this.refreshRate.setRate(rate);
   }
 
   getSource() {
