@@ -38,20 +38,20 @@ export default class DragRotation {
     });
     window.addEventListener('mouseup', () => {
       isRotating = false;
-      // let initial = this.node.getRotation();
-      // let x = initial[0];
-      // let y = initial[1];
-      // let z = initial[2];
-      // let w = initial[3];
-      // let xx = x * x;
-      // let yy = y * y;
-      // let zz = z * z;
-      // let ty = 2 * (x * z + y * w);
+      let initial = this.node.getRotation();
+      let x = initial[0];
+      let y = initial[1];
+      let z = initial[2];
+      let w = initial[3];
+      let xx = x * x;
+      let yy = y * y;
+      let zz = z * z;
+      let ty = 2 * (x * z + y * w);
 
-      // let rx = Math.atan2(2 * (x * w - y * z), 1 - 2 * (xx + yy));
-      // let ry = Math.asin(ty < -1 ? -1 : ty > 1 ? 1 : ty);
-      // let rz = Math.atan2(2 * (z * w - x * y), 1 - 2 * (yy + zz));
-      // console.log(rx, ry, rz);
+      let rx = Math.atan2(2 * (x * w - y * z), 1 - 2 * (xx + yy));
+      let ry = Math.asin(ty < -1 ? -1 : ty > 1 ? 1 : ty);
+      let rz = Math.atan2(2 * (z * w - x * y), 1 - 2 * (yy + zz));
+      console.log('setRotation(' + rx + ', ' + ry + ', ' + rz + ')');
     });
     window.addEventListener('mousemove', (evt) => {
       if (isRotating) {

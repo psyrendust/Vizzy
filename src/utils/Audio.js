@@ -1,6 +1,6 @@
 // const FFTSIZE = 128;
 const FFTSIZE = 128;
-const TIMEBUFFER = 128;
+const TIMEBUFFER = 256;
 const REFRESH_RATE = 50;
 
 export default class Audio {
@@ -18,6 +18,7 @@ export default class Audio {
     this.analyser.fftSize = FFTSIZE;
     this.refreshRate = REFRESH_RATE;
     this.data = {
+      fftSize: FFTSIZE / 2,
       bufferLength: this.analyser.frequencyBinCount,
       fftBufferFloat: [],
       fftBufferByte: [],
@@ -28,7 +29,8 @@ export default class Audio {
     this.id = this.node.addComponent(this);
     this.buffers = [];
     this.elements = [];
-    this.index = 1;
+    // this.index = Math.floor(Math.random() * this.totalTracks);
+    this.index = 3;
     this.loaded = 0;
 
     this.config = {
