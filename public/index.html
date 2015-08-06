@@ -8,11 +8,12 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-            html, body {
+            html, body, #container, #instructions {
                 width: 100%;
                 height: 100%;
                 margin: 0px;
                 padding: 0px;
+                box-sizing: border-box;
             }
             body {
                 position: absolute;
@@ -27,12 +28,34 @@
             .vizzyMedia {
               display: none;
             }
+            #container {
+              position: relative;
+              z-index: 1;
+            }
+            #instructions {
+              position: absolute;
+              z-index: 2;
+            }
+            #instructions > div {
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
+              display: flex;
+              align-items: flex-start;
+              justify-content: center;
+              margin-top: 10px;
+              color: rgba(230, 230, 230, 0.5);
+              font-family: helvetica, arial, sans-serif;
+              font-size: 20px;
+              font-weight: 200;
+            }
         </style>
     </head>
     <body>
+        <div id="instructions">
+          <div>loading audio</div>
+        </div>
+        <div id="container"></div>
         <audio id="media01" class="vizzyMedia" src="media/03-revolusion.mp3"></audio>
-        <audio id="media02" class="vizzyMedia" src="media/05-ciant-hear-it.mp3"></audio>
-        <audio id="media03" class="vizzyMedia" src="media/05-shoot-me-down.mp3"></audio>
         <audio id="media04" class="vizzyMedia" src="media/minipops.mp3"></audio>
         <script src="bundle.js"></script>
     </body>

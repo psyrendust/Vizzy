@@ -65,11 +65,11 @@ class Background extends Node {
 
 class Vizzy {
   init() {
-    this.scene = FamousEngine.createScene()
+    this.scene = FamousEngine.createScene('#container');
     this.camera = new Camera(this.scene);
     this.camera.setDepth(120);
     this.root = this.scene.addChild()
-    this.background = this.root.addChild(new Background());
+    // this.background = this.root.addChild(new Background());
     this.lights = this.root.addChild(new Lights());
     this.audio = new Audio(this.root);
     this.grid = this.root.addChild(new Grid(this.audio));
@@ -80,17 +80,17 @@ class Vizzy {
   }
   onUpdate() {
     this.data = this.audio.getData();
-    this.refreshRate.throttle(() => {
-      if (this.data.fftBufferFloat[0]) {
-        if (this.data.fftBufferFloat[0][this.data.fftSize - 8] > -90) {
-          this.background.show();
-        } else {
-          this.background.hide();
-        }
-      } else {
-        this.background.hide();
-      }
-    });
+    // this.refreshRate.throttle(() => {
+    //   if (this.data.fftBufferFloat[0]) {
+    //     if (this.data.fftBufferFloat[0][this.data.fftSize - 8] > -90) {
+    //       this.background.show();
+    //     } else {
+    //       this.background.hide();
+    //     }
+    //   } else {
+    //     this.background.hide();
+    //   }
+    // });
     this.grid.updateItems(this.data);
     this.root.requestUpdateOnNextTick(this.id);
   }

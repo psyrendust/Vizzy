@@ -42,6 +42,6 @@
   "license": "MIT",
   "dependencies": {
     "babelify": "^6.1.2",
-    "famous": "famous/engine#develop"
+    "famous": "^0.7.1"
   }
 }

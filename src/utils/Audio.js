@@ -7,6 +7,7 @@ const REFRESH_RATE = 50;
 export default class Audio {
   constructor(node, params = {}) {
     this.node = node;
+    this.instructions = document.querySelector('#instructions > div');
     this.audioElements = document.querySelectorAll('.vizzyMedia');
     this.totalTracks = this.audioElements.length;
     this.isPlaying = false;
@@ -53,6 +54,7 @@ export default class Audio {
     }
 
     console.log('-- start preload');
+    this.instructions.innerHTML = 'start preloading audio';
     for (let i = 0; i < this.totalTracks; i++) {
       this.ajax({
         file: this.audioElements[i].src,
@@ -87,6 +89,7 @@ export default class Audio {
   }
 
   decodeAudioData(httpRequest) {
+    this.instructions.innerHTML = 'decoding audio data';
     console.log('-- decodingAudioData: ' + httpRequest.config.url);
     this.audioCtx.decodeAudioData(httpRequest.response, (buffer) => {
       let source = this.audioCtx.createBufferSource();
@@ -111,9 +114,13 @@ export default class Audio {
     console.log('---- decodeAudioDataComplete: ' + id);
     this.loaded += 1;
     if (this.loaded >= this.totalTracks) {
-      this.refreshRate = new RefreshRate(200);
-      this.onUpdate();
-      this.nextSong();
+      this.instructions.innerHTML = 'audio preloading complete';
+      setTimeout(() => {
+        this.refreshRate = new RefreshRate(200);
+        this.onUpdate();
+        this.nextSong();
+        this.instructions.innerHTML = 'click and drag to pan';
+      }, 2000);
     }
   }
 
